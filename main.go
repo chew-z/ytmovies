@@ -5,15 +5,27 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 )
 
-type Movie struct {
+type Params struct {
 	Id     string `form:"id"`
 	Format string `form:"format"`
-	Title  string `form:"title"`
+}
+
+type Movie struct {
+	Id          string
+	Title       string
+	Channel     string
+	Duration    string
+	Link        string
+	ReleaseDate string
+	Timestamp   string
+	UploadDate  string
+	Url         string
 }
 
 var (
@@ -36,6 +48,11 @@ func main() {
 		format := c.DefaultQuery("f", "")
 		if id != "" {
 			go ytDownload(id, format)
+			go func() {
+				time.Sleep(10 * time.Second)
+				extractInfo(id)
+
+			}()
 		}
 		u := uRL + id + ".mp4"
 		c.HTML(http.StatusOK, "main.html", gin.H{
@@ -48,16 +65,16 @@ func main() {
 }
 
 func startPage(c *gin.Context) {
-	var movie Movie
+	var params Params
 	id := ""
 	format := ""
-	if err := c.ShouldBind(&movie); err != nil {
+	if err := c.ShouldBind(&params); err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	} else {
-		log.Println(movie.Id)
-		id = movie.Id
-		format = movie.Format
+		log.Println(params.Id)
+		id = params.Id
+		format = params.Format
 		go ytDownload(id, format)
 	}
 	u := uRL + id + ".mp4"
